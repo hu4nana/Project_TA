@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class PlayerDefense : MonoBehaviour
 {
+    PlayerFeedbacks feedbacks;
+
+    void Awake()
+    {
+        feedbacks = GetComponent<PlayerFeedbacks>();
+    }
     [Header("Parry")]
     [SerializeField] float parryWindow = 0.15f;
     [SerializeField] float parryRecovery = 0.1f;
@@ -42,6 +48,7 @@ public class PlayerDefense : MonoBehaviour
         parryTimer = parryWindow;
         parryRecoveryTimer = parryWindow + parryRecovery;
         character.ChangeState(ActionState.Parry);
+        feedbacks?.PlayParryStart();
         return true;
     }
 
@@ -53,6 +60,7 @@ public class PlayerDefense : MonoBehaviour
         dodgeInvincibleTimer = dodgeInvincibleTime;
         perfectDodgeTimer = perfectDodgeWindow;
         character.ChangeState(ActionState.Dodge);
+        feedbacks?.PlayDodgeStart();
         return true;
     }
 
@@ -63,6 +71,7 @@ public class PlayerDefense : MonoBehaviour
             resourceController.OnParrySuccess();
             CounterWindowSystem.Instance?.Open(CounterTriggerType.Parry);
             character.ChangeState(ActionState.None);
+            feedbacks?.PlayParrySuccess();
             return true;
         }
 
@@ -70,6 +79,7 @@ public class PlayerDefense : MonoBehaviour
         {
             resourceController.OnPerfectDodgeSuccess();
             CounterWindowSystem.Instance?.Open(CounterTriggerType.PerfectDodge);
+            feedbacks?.PlayPerfectDodge();
             return true;
         }
 

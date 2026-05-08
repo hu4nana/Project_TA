@@ -8,6 +8,7 @@ public class PlayerHitReceiver : MonoBehaviour, IDamageable
     PlayerDefense defense;
     PlayerResourceController resources;
     PlayerMotor motor;
+    PlayerFeedbacks feedbacks;
     float stunTimer;
 
     public void Initialize(Character owner, PlayerDefense playerDefense, PlayerResourceController resourceController, PlayerMotor playerMotor)
@@ -16,6 +17,7 @@ public class PlayerHitReceiver : MonoBehaviour, IDamageable
         defense = playerDefense;
         resources = resourceController;
         motor = playerMotor;
+        feedbacks = owner.GetComponent<PlayerFeedbacks>();
     }
 
     public void Tick(float deltaTime)
@@ -32,6 +34,7 @@ public class PlayerHitReceiver : MonoBehaviour, IDamageable
     {
         character.LossHP(info.damage);
         motor.ApplyKnockback(info.knockback);
+        feedbacks?.PlayHitTaken();
 
         if (character.HP <= 0)
         {

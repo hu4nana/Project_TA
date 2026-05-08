@@ -11,6 +11,7 @@ public class PlayerSkillCaster : MonoBehaviour
     Player player;
     PlayerMotor motor;
     PlayerSkillLoadout loadout;
+    PlayerFeedbacks feedbacks;
     float castTimer;
 
     public bool IsCasting => castTimer > 0f;
@@ -21,6 +22,7 @@ public class PlayerSkillCaster : MonoBehaviour
         player = GetComponent<Player>();
         motor = GetComponent<PlayerMotor>();
         loadout = GetComponent<PlayerSkillLoadout>();
+        feedbacks = GetComponent<PlayerFeedbacks>();
     }
 
     public void Tick(Character character, PlayerResourceController resources, float deltaTime)
@@ -97,6 +99,7 @@ public class PlayerSkillCaster : MonoBehaviour
         GameObject skillObject = Instantiate(skillPrefab.gameObject, transform.position, Quaternion.identity);
         SkillBehaviour skillInstance = skillObject.GetComponent<SkillBehaviour>();
         skillInstance.Cast(context);
+        feedbacks?.PlaySkillCast();
         Destroy(skillObject, 1f);
         return true;
     }

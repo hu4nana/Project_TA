@@ -14,6 +14,7 @@ public class PlayerCombat : MonoBehaviour
     Player player;
     PlayerMotor motor;
     PlayerResourceController resources;
+    PlayerFeedbacks feedbacks;
 
     public bool IsAttacking => attackTimer > 0f;
 
@@ -22,6 +23,7 @@ public class PlayerCombat : MonoBehaviour
         player = GetComponent<Player>();
         motor = GetComponent<PlayerMotor>();
         resources = GetComponent<PlayerResourceController>();
+        feedbacks = GetComponent<PlayerFeedbacks>();
     }
 
     public bool TryStartAttack(Character character)
@@ -32,6 +34,7 @@ public class PlayerCombat : MonoBehaviour
         attackTimer = attackDuration;
         hitApplied = false;
         character.ChangeState(ActionState.Attack);
+        feedbacks?.PlayBasicAttack();
         return true;
     }
 

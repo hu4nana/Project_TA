@@ -72,6 +72,7 @@ public class Character : MonoBehaviour
     protected BoxCollider2D col;
     float minGroundNormalY;
     protected RaycastHit2D groundHIt;
+    readonly ContactPoint2D[] groundContacts = new ContactPoint2D[8];
 
     [SerializeField]
     protected bool isGrounded;
@@ -100,7 +101,15 @@ public class Character : MonoBehaviour
         col = GetComponent<BoxCollider2D>();
 
         minGroundNormalY = Mathf.Cos(maxSlopeAngle * Mathf.Deg2Rad);
-        groundMask = LayerMask.GetMask("Platform");
+        groundMask = LayerMask.GetMask(
+            "Platform",
+            "Platforms",
+            "OneWayPlatforms",
+            "MovingPlatforms",
+            "MovingOneWayPlatforms",
+            "PlatformsPlayerOnly",
+            "MidHeightOneWayPlatforms"
+        );
     }
 
     #region About CharacterState
@@ -268,22 +277,29 @@ public class Character : MonoBehaviour
     public bool Grounded(out RaycastHit2D hit)
     {
         var b = col.bounds;
-        groundCheckCenter = new Vector2(b.center.x, b.min.y - 0.03f);
-        groundCheckSize = new Vector2(Mathf.Max(0.05f, b.size.x - edgeInset * 2f), 0.08f);
-
-        Collider2D overlap = Physics2D.OverlapBox(groundCheckCenter, groundCheckSize, 0f, groundMask);
+        groundCheckCenter = new Vector2(b.center.x, b.min.y - 0.02f);
+        groundCheckSize = new Vector2(Mathf.Max(0.05f, b.size.x - edgeInset * 2f), 0.1f);
         hit = default;
 
-        if (overlap == null)
-            return false;
+        int contactCount = col.GetContacts(groundContacts);
+        for (int i = 0; i < contactCount; i++)
+        {
+            ContactPoint2D contact = groundContacts[i];
+            if (((1 << contact.collider.gameObject.layer) & groundMask) == 0)
+                continue;
 
-        hit = Physics2D.Raycast(groundCheckCenter, Vector2.down, 0.2f, groundMask);
-        return hit.collider == null || hit.normal.y >= minGroundNormalY;
+            if (contact.normal.y >= minGroundNormalY)
+                return true;
+        }
+
+        Collider2D overlap = Physics2D.OverlapBox(groundCheckCenter, groundCheckSize, 0f, groundMask);
+        return overlap != null;
     }
 
     public bool IsGrounded => isGrounded;
     public Vector2 GroundCheckCenter => groundCheckCenter;
     public Vector2 GroundCheckSize => groundCheckSize;
+    public LayerMask GroundMask => groundMask;
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()

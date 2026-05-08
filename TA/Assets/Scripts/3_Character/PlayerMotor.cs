@@ -6,6 +6,7 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float airControlMultiplier = 0.75f;
     [SerializeField] float fallGravityMultiplier = 1.8f;
     [SerializeField] float lowJumpGravityMultiplier = 2.2f;
+    [SerializeField] float wallSlideSpeed = 2f;
 
     Character character;
     Rigidbody2D rigid;
@@ -64,6 +65,19 @@ public class PlayerMotor : MonoBehaviour
         dodgeVelocity = new Vector2(direction * character.dashForce, 0f);
         dodgeTimer = character.dashTime;
         SetFacing(direction > 0f);
+    }
+
+    public void StartWallSlide()
+    {
+        if (rigid.linearVelocity.y < -wallSlideSpeed)
+            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, -wallSlideSpeed);
+    }
+
+    public void WallJump(int wallDirection, float horizontalForce, float verticalForce)
+    {
+        rigid.linearVelocity = Vector2.zero;
+        rigid.AddForce(new Vector2(-wallDirection * horizontalForce, verticalForce), ForceMode2D.Impulse);
+        SetFacing(wallDirection < 0f);
     }
 
     public void ApplyKnockback(Vector2 force)

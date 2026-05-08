@@ -16,8 +16,14 @@ public class PlayerInputReader : MonoBehaviour
         Keyboard keyboard = Keyboard.current;
         Gamepad gamepad = Gamepad.current;
 
+        bool keyboardJumpPressed = keyboard != null && keyboard.zKey.wasPressedThisFrame;
+        bool gamepadJumpPressed = gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
         bool keyboardHeld = keyboard != null && keyboard.zKey.isPressed;
         bool gamepadHeld = gamepad != null && gamepad.buttonSouth.isPressed;
+
+        if (keyboardJumpPressed || gamepadJumpPressed)
+            jumpPressed = true;
+
         JumpHeld = keyboardHeld || gamepadHeld;
     }
 
@@ -25,8 +31,6 @@ public class PlayerInputReader : MonoBehaviour
 
     public void SetJump(bool pressed)
     {
-        if (pressed)
-            jumpPressed = true;
     }
 
     public void SetAttack(bool pressed)
