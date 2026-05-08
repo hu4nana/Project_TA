@@ -21,5 +21,9 @@ public interface ICharacterAction
 
 public interface ICharacterCondition
 {
+}
 
+public interface IDamageable
+{
+    void TakeDamage(DamageInfo info);
 }

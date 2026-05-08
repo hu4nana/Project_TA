@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-// ÀüÅõ Áß, °á°ú °ªÀÇ ¿¹ÃøÀ» ½±°ÔÇÏ±âÀ§ÇØ À¢¸¸ÇØ¼± int·Î ¼±¾ðÇÔ.
 public class Character : MonoBehaviour
 {
     public MovementState movementState;
@@ -12,10 +11,10 @@ public class Character : MonoBehaviour
     #region Character Basic Stats
 
     [Header("Basic Stats")]
-    // HP. 0ÀÌ µÉ ½Ã Çàµ¿ºÒ´ÉÀÌ µÊ
+    // HP. 0ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½àµ¿ï¿½Ò´ï¿½ï¿½ï¿½ ï¿½ï¿½
     public int MaxHP = 5;
     public int MaxChance = 5;
-    // ½ºÅ³ »ç¿ë¿¡ ÇÊ¿äÇÑ ÀÚ¿ø. FP°¡ ÀÓ°èÁ¡¿¡ µµ´ÞÇßÀ» ½Ã »ý¼ºµÊ.
+    // ï¿½ï¿½Å³ ï¿½ï¿½ë¿¡ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½Ú¿ï¿½. FPï¿½ï¿½ ï¿½Ó°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
     public int Chance;
 
     public int ATK;
@@ -41,7 +40,7 @@ public class Character : MonoBehaviour
     public string ID { get; }
 
     [HideInInspector]
-    // FP°¡ Chance·Î ÀüÈ¯µÇ´Â ±âÁØÄ¡.
+    // FPï¿½ï¿½ Chanceï¿½ï¿½ ï¿½ï¿½È¯ï¿½Ç´ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡.
     public int FP_Threshold { get; set; } = 2;
 
 
@@ -60,6 +59,8 @@ public class Character : MonoBehaviour
     protected Rigidbody2D rigid;
     protected Animator ani;
 
+    public Rigidbody2D Rigidbody => rigid;
+
     #region About CheckGround
 
     LayerMask groundMask;
@@ -74,6 +75,8 @@ public class Character : MonoBehaviour
 
     [SerializeField]
     protected bool isGrounded;
+    protected Vector2 groundCheckCenter;
+    protected Vector2 groundCheckSize;
 
 
     #endregion
@@ -88,13 +91,16 @@ public class Character : MonoBehaviour
 
         this.jumpChance = this.maxJumpChance;
 
-        rigid=GetComponent<Rigidbody2D>();
-        ani=GetComponent<Animator>();
-        col= GetComponent<BoxCollider2D>();
+        movementState = MovementState.Idle;
+        actionState = ActionState.None;
+        conditionState = ConditionState.Normal;
 
-        col=GetComponent<BoxCollider2D>();
-        minGroundNormalY=Mathf.Cos(maxSlopeAngle*Mathf.Deg2Rad);
-        groundMask = LayerMask.NameToLayer("Platform");
+        rigid = GetComponent<Rigidbody2D>();
+        ani = GetComponent<Animator>();
+        col = GetComponent<BoxCollider2D>();
+
+        minGroundNormalY = Mathf.Cos(maxSlopeAngle * Mathf.Deg2Rad);
+        groundMask = LayerMask.GetMask("Platform");
     }
 
     #region About CharacterState
@@ -134,14 +140,14 @@ public class Character : MonoBehaviour
     #endregion
 
     #region About HP
-    // Ã¼·ÂÈ¸º¹
+    // Ã¼ï¿½ï¿½È¸ï¿½ï¿½
     public virtual void RegainHP(int index)
     {
         HP += index;
         if(HP > MaxHP) HP = MaxHP;
     }
 
-    // Ã¼·Â°¨¼Ò
+    // Ã¼ï¿½Â°ï¿½ï¿½ï¿½
     public virtual void LossHP(int index)
     {
         HP -= index;
@@ -150,7 +156,7 @@ public class Character : MonoBehaviour
     #endregion
 
     #region About FP
-    // ÃÊ´ç ÁýÁß·Â È¸º¹
+    // ï¿½Ê´ï¿½ ï¿½ï¿½ï¿½ß·ï¿½ È¸ï¿½ï¿½
     public virtual void RegainFocusPointPerSecond()
     {
         if (FP < FP_Threshold)
@@ -160,7 +166,7 @@ public class Character : MonoBehaviour
     }
 
 
-    // º¸³Ê½º ÁýÁß·Â È¹µæ
+    // ï¿½ï¿½ï¿½Ê½ï¿½ ï¿½ï¿½ï¿½ß·ï¿½ È¹ï¿½ï¿½
     public virtual void AcquireBonusFP(float fp)
     {
         this.FP += fp;
@@ -168,7 +174,7 @@ public class Character : MonoBehaviour
     }
 
 
-    // FP¸¦ Chance·Î ¹Ù²Þ
+    // FPï¿½ï¿½ Chanceï¿½ï¿½ ï¿½Ù²ï¿½
     public void Change_FP_To_Chance()
     {
         AddChanceIndex(1);
@@ -177,7 +183,7 @@ public class Character : MonoBehaviour
     #endregion
 
     #region About Chance
-    // Âù½º È¹µæ
+    // ï¿½ï¿½ï¿½ï¿½ È¹ï¿½ï¿½
     public void AddChanceIndex(int index)
     {
         this.Chance += index;
@@ -185,7 +191,7 @@ public class Character : MonoBehaviour
     }
 
 
-    // Âù½º ¼Ò¸ð
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Ò¸ï¿½
     public void UseChance(int index)
     {
         if (this.Chance - index >= 0)
@@ -247,39 +253,37 @@ public class Character : MonoBehaviour
     }
     #endregion
 
-    // ¹Ù´Ú Ã¼Å©
+    // ï¿½Ù´ï¿½ Ã¼Å©
     public virtual void GroundCheck()
     {
         isGrounded =Grounded(out groundHIt);
     }
 
-    // Á¡ÇÁÈ½¼ö ÃÊ±âÈ­
+    // ï¿½ï¿½ï¿½ï¿½È½ï¿½ï¿½ ï¿½Ê±ï¿½È­
     public virtual void JumpChanceInit()
     {
-        if (isGrounded && jumpChance != maxJumpChance)
-        {
+        if (isGrounded)
             jumpChance = maxJumpChance;
-        }
     }
     public bool Grounded(out RaycastHit2D hit)
     {
-        var b = col.bounds;                       // ¿ùµå AABB
-        float y = b.min.y - downOffset;            // ÇÏ´Üº¸´Ù »ìÂ¦ ¾Æ·¡
-        Vector2 a = new(b.min.x + edgeInset, y);   // ¿ÞÂÊ ½ÃÀÛÁ¡(¾ÈÂÊÀ¸·Î »ìÂ¦)
-        Vector2 c = new(b.max.x - edgeInset, y);   // ¿À¸¥ÂÊ ³¡Á¡(¾ÈÂÊÀ¸·Î »ìÂ¦)
+        var b = col.bounds;
+        groundCheckCenter = new Vector2(b.center.x, b.min.y - 0.03f);
+        groundCheckSize = new Vector2(Mathf.Max(0.05f, b.size.x - edgeInset * 2f), 0.08f);
 
-        Debug.DrawLine(a, c, Color.cyan);          // ¾À¿¡¼­ ½Ã°¢È­
+        Collider2D overlap = Physics2D.OverlapBox(groundCheckCenter, groundCheckSize, 0f, groundMask);
+        hit = default;
 
-        hit = Physics2D.Linecast(a, c, groundMask);
-        if (hit.collider == null) return false;
+        if (overlap == null)
+            return false;
 
-        // °æ»ç ÇÊÅÍ(³Ê¹« °¡ÆÄ¸¥ ¸é Á¦¿Ü)
-        if (hit.normal.y < minGroundNormalY) return false;
-
-        return true;
+        hit = Physics2D.Raycast(groundCheckCenter, Vector2.down, 0.2f, groundMask);
+        return hit.collider == null || hit.normal.y >= minGroundNormalY;
     }
 
-    public bool IsGrounded => Grounded(out _);
+    public bool IsGrounded => isGrounded;
+    public Vector2 GroundCheckCenter => groundCheckCenter;
+    public Vector2 GroundCheckSize => groundCheckSize;
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
