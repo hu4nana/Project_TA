@@ -3,11 +3,14 @@ using UnityEngine;
 public class PlayerCombat : MonoBehaviour
 {
     [SerializeField] float attackDuration = 0.18f;
-    [SerializeField] Vector2 attackOffset = new(0.9f, 0f);
-    [SerializeField] Vector2 attackSize = new(1.2f, 1f);
-    [SerializeField] int attackDamage = 1;
-    [SerializeField] Vector2 attackKnockback = new(2.5f, 1f);
-    [SerializeField] LayerMask hitMask = ~0;
+    [SerializeField] HitboxAttackData basicAttack = new HitboxAttackData
+    {
+        offset = new Vector2(1.05f, 0f),
+        size = new Vector2(1.8f, 1.4f),
+        damage = 1,
+        knockback = new Vector2(2.5f, 1f),
+        hitMask = ~0
+    };
 
     float attackTimer;
     bool hitApplied;
@@ -40,6 +43,8 @@ public class PlayerCombat : MonoBehaviour
 
     public void Tick(Character character, float deltaTime)
     {
+        CombatHitbox.TickDebug(Time.unscaledDeltaTime);
+
         if (attackTimer <= 0f)
             return;
 
@@ -58,25 +63,13 @@ public class PlayerCombat : MonoBehaviour
     void ApplyHit()
     {
         Vector2 dir = motor != null && motor.FacingRight ? Vector2.right : Vector2.left;
-        Vector2 center = (Vector2)transform.position + new Vector2(attackOffset.x * dir.x, attackOffset.y);
-        Collider2D[] hits = Physics2D.OverlapBoxAll(center, attackSize, 0f, hitMask);
-
-        for (int i = 0; i < hits.Length; i++)
-        {
-            if (hits[i].gameObject == gameObject)
-                continue;
-
-            IDamageable damageable = hits[i].GetComponent<IDamageable>();
-            if (damageable == null)
-                continue;
-
-            damageable.TakeDamage(new DamageInfo
-            {
-                damage = attackDamage,
-                knockback = new Vector2(attackKnockback.x * dir.x, attackKnockback.y),
-                source = gameObject
-            });
-            resources?.OnAttackHit();
-        }
+        CombatHitbox.ApplyBox(
+            gameObject,
+            transform.position,
+            dir,
+            basicAttack,
+            "Basic Attack Hitbox",
+            Color.orange,
+            _ => resources?.OnAttackHit());
     }
 }

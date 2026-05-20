@@ -6,12 +6,12 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] float airControlMultiplier = 0.75f;
     [SerializeField] float fallGravityMultiplier = 1.8f;
     [SerializeField] float lowJumpGravityMultiplier = 2.2f;
-    [SerializeField] float wallSlideSpeed = 2f;
 
     Character character;
     Rigidbody2D rigid;
 
     float dodgeTimer;
+    float defaultGravityScale;
     Vector2 dodgeVelocity;
 
     public bool IsDodging => dodgeTimer > 0f;
@@ -22,6 +22,7 @@ public class PlayerMotor : MonoBehaviour
         character = owner;
         rigid = owner.GetComponent<Rigidbody2D>();
         rigid.freezeRotation = true;
+        defaultGravityScale = rigid.gravityScale;
     }
 
     public void Tick(float deltaTime)
@@ -29,8 +30,16 @@ public class PlayerMotor : MonoBehaviour
         if (dodgeTimer > 0f)
         {
             dodgeTimer -= deltaTime;
-            rigid.linearVelocity = new Vector2(dodgeVelocity.x, rigid.linearVelocity.y);
+            rigid.linearVelocity = new Vector2(dodgeVelocity.x, 0f);
+
+            if (dodgeTimer <= 0f)
+                EndDodge();
+
+            return;
         }
+
+        if (!Mathf.Approximately(rigid.gravityScale, defaultGravityScale))
+            rigid.gravityScale = defaultGravityScale;
 
         ApplyBetterGravity();
     }
@@ -59,25 +68,28 @@ public class PlayerMotor : MonoBehaviour
             rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
     }
 
-    public void StartDodge(float inputX)
+    public void StartDodge(float duration)
     {
-        float direction = Mathf.Abs(inputX) > 0.01f ? Mathf.Sign(inputX) : (FacingRight ? 1f : -1f);
+        float direction = FacingRight ? 1f : -1f;
         dodgeVelocity = new Vector2(direction * character.dashForce, 0f);
-        dodgeTimer = character.dashTime;
-        SetFacing(direction > 0f);
+        dodgeTimer = duration;
+        rigid.gravityScale = 0f;
+        rigid.linearVelocity = new Vector2(dodgeVelocity.x, 0f);
     }
 
-    public void StartWallSlide()
+    void EndDodge()
     {
-        if (rigid.linearVelocity.y < -wallSlideSpeed)
-            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, -wallSlideSpeed);
+        dodgeTimer = 0f;
+        rigid.gravityScale = defaultGravityScale;
+        rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0f);
     }
 
-    public void WallJump(int wallDirection, float horizontalForce, float verticalForce)
+    public void StopHorizontalMovement()
     {
-        rigid.linearVelocity = Vector2.zero;
-        rigid.AddForce(new Vector2(-wallDirection * horizontalForce, verticalForce), ForceMode2D.Impulse);
-        SetFacing(wallDirection < 0f);
+        if (IsDodging)
+            return;
+
+        rigid.linearVelocity = new Vector2(0f, rigid.linearVelocity.y);
     }
 
     public void ApplyKnockback(Vector2 force)

@@ -14,29 +14,33 @@ public class PlayerDefense : MonoBehaviour
 
     [Header("Dodge")]
     [SerializeField] float dodgeInvincibleTime = 0.18f;
+    [SerializeField] float dodgeDashEndBeforeInvincibleEnds = 0.1f;
     [SerializeField] float perfectDodgeWindow = 0.12f;
 
     float parryTimer;
     float parryRecoveryTimer;
     float dodgeInvincibleTimer;
+    float dodgeActionTimer;
     float perfectDodgeTimer;
 
     public bool IsParrying => parryTimer > 0f;
     public bool IsParryRecovering => parryRecoveryTimer > 0f;
     public bool IsInvincible => dodgeInvincibleTimer > 0f;
     public bool IsPerfectDodgeWindowActive => perfectDodgeTimer > 0f;
+    public float DodgeDashDuration => Mathf.Max(0f, dodgeInvincibleTime - dodgeDashEndBeforeInvincibleEnds);
 
     public void Tick(Character character, float deltaTime)
     {
         parryTimer -= deltaTime;
         parryRecoveryTimer -= deltaTime;
         dodgeInvincibleTimer -= deltaTime;
+        dodgeActionTimer -= deltaTime;
         perfectDodgeTimer -= deltaTime;
 
         if (character.actionState == ActionState.Parry && parryTimer <= 0f && parryRecoveryTimer <= 0f)
             character.ChangeState(ActionState.None);
 
-        if (character.actionState == ActionState.Dodge && dodgeInvincibleTimer <= 0f)
+        if (character.actionState == ActionState.Dodge && dodgeActionTimer <= 0f)
             character.ChangeState(ActionState.None);
     }
 
@@ -58,6 +62,7 @@ public class PlayerDefense : MonoBehaviour
             return false;
 
         dodgeInvincibleTimer = dodgeInvincibleTime;
+        dodgeActionTimer = DodgeDashDuration;
         perfectDodgeTimer = perfectDodgeWindow;
         character.ChangeState(ActionState.Dodge);
         feedbacks?.PlayDodgeStart();

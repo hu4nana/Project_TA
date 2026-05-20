@@ -48,10 +48,11 @@ MonoBehaviour:
   atpCost: 40
   cooldown: 2
   castDuration: 0.25
-  hitboxOffset: {x: 1.25, y: 0}
-  hitboxSize: {x: 2.5, y: 1.5}
-  damage: 2
-  knockback: {x: 5, y: 2}
-  hitMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
+  attack:
+    offset: {x: 1.25, y: 0}
+    size: {x: 2.5, y: 1.5}
+    damage: 2
+    knockback: {x: 5, y: 2}
+    hitMask:
+      serializedVersion: 2
+      m_Bits: 4294967295

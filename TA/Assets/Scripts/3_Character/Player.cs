@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerMotor))]
 [RequireComponent(typeof(PlayerCombat))]
 [RequireComponent(typeof(PlayerDefense))]
+[RequireComponent(typeof(PlayerInteractor))]
 [RequireComponent(typeof(PlayerResourceController))]
 [RequireComponent(typeof(PlayerHitReceiver))]
 [RequireComponent(typeof(PlayerSkillCaster))]
@@ -16,18 +17,15 @@ public class Player : Character
     [SerializeField] float coyoteTime = 0.1f;
     [SerializeField] float groundIgnoreAfterJump = 0.12f;
 
-    [Header("Wall")]
-    [SerializeField] bool wallAbilitiesUnlocked = false;
+    [Header("Wall Check")]
     [SerializeField] float wallCheckDistance = 0.08f;
     [SerializeField] Vector2 wallCheckSize = new(0.12f, 1.6f);
-    [SerializeField] float wallJumpHorizontalForce = 10f;
-    [SerializeField] float wallJumpVerticalForce = 12f;
-    [SerializeField] float wallJumpLockTime = 0.15f;
 
     PlayerInputReader inputReader;
     PlayerMotor motor;
     PlayerCombat combat;
     PlayerDefense defense;
+    PlayerInteractor interactor;
     PlayerResourceController resources;
     PlayerHitReceiver hitReceiver;
     PlayerSkillCaster skillCaster;
@@ -37,7 +35,7 @@ public class Player : Character
     int wallDirection;
     float coyoteTimer;
     float groundIgnoreTimer;
-    float wallJumpLockTimer;
+    bool inputLocked;
 
     private void Start()
     {
@@ -52,6 +50,7 @@ public class Player : Character
         motor = GetOrAdd<PlayerMotor>();
         combat = GetOrAdd<PlayerCombat>();
         defense = GetOrAdd<PlayerDefense>();
+        interactor = GetOrAdd<PlayerInteractor>();
         resources = GetOrAdd<PlayerResourceController>();
         hitReceiver = GetOrAdd<PlayerHitReceiver>();
         GetOrAdd<PlayerSkillLoadout>();
@@ -75,6 +74,16 @@ public class Player : Character
         if (conditionState == ConditionState.Dead)
             return;
 
+        if (inputLocked)
+        {
+            if (inputReader.ConsumeAttackPressed())
+                DialogueController.Instance?.Advance();
+
+            motor.StopHorizontalMovement();
+            ChangeState(MovementState.Idle);
+            return;
+        }
+
         if (!inputReader.JumpHeld)
             motor.CutJump();
 
@@ -87,15 +96,24 @@ public class Player : Character
         if (conditionState == ConditionState.Dead)
             return;
 
+        if (inputLocked)
+        {
+            motor.StopHorizontalMovement();
+            motor.Tick(Time.fixedDeltaTime);
+            return;
+        }
+
         float moveX = inputReader.Move.x;
-        if (wallJumpLockTimer > 0f)
-            wallJumpLockTimer -= Time.fixedDeltaTime;
+        bool pushingIntoWall = IsPushingIntoWall(moveX);
 
-        if (actionState != ActionState.Parry && wallJumpLockTimer <= 0f)
+        if (actionState != ActionState.Parry && !pushingIntoWall)
+        {
             motor.Move(moveX);
-
-        if (ShouldWallSlide())
-            motor.StartWallSlide();
+        }
+        else if (pushingIntoWall)
+        {
+            motor.StopHorizontalMovement();
+        }
 
         motor.Tick(Time.fixedDeltaTime);
     }
@@ -106,13 +124,19 @@ public class Player : Character
             defense.TryStartParry(this);
 
         if (inputReader.ConsumeDashPressed() && defense.TryStartDodge(this))
-            motor.StartDodge(inputReader.Move.x);
+            motor.StartDodge(defense.DodgeDashDuration);
 
         if (inputReader.ConsumeJumpPressed())
             TryJump();
 
         if (inputReader.ConsumeAttackPressed() && !skillCaster.IsCasting)
             combat.TryStartAttack(this);
+
+        if (inputReader.ConsumeSkillPressed(out int skillIndex))
+            skillCaster.TryCast(this, resources, skillIndex);
+
+        if (inputReader.ConsumeInteractPressed())
+            interactor.TryInteract(this);
     }
 
     void UpdateMovementState()
@@ -131,7 +155,7 @@ public class Player : Character
 
     void UpdateGroundState(float deltaTime)
     {
-        bool rawGrounded = Grounded(out groundHIt);
+        bool rawGrounded = Grounded();
 
         if (groundIgnoreTimer > 0f)
         {
@@ -157,18 +181,6 @@ public class Player : Character
 
     void TryJump()
     {
-        if (wallAbilitiesUnlocked && ShouldWallSlide())
-        {
-            wallJumpLockTimer = wallJumpLockTime;
-            isGrounded = false;
-            isTouchingWall = false;
-            coyoteTimer = 0f;
-            groundIgnoreTimer = groundIgnoreAfterJump;
-            jumpChance = Mathf.Max(0, maxJumpChance - 1);
-            motor.WallJump(wallDirection, wallJumpHorizontalForce, wallJumpVerticalForce);
-            return;
-        }
-
         bool canGroundJump = isGrounded || coyoteTimer > 0f;
 
         if (canGroundJump)
@@ -204,16 +216,25 @@ public class Player : Character
         wallDirection = leftWall ? -1 : rightWall ? 1 : 0;
     }
 
-    bool ShouldWallSlide()
+    bool IsPushingIntoWall(float inputX)
     {
-        if (!wallAbilitiesUnlocked)
+        if (!isTouchingWall || isGrounded || wallDirection == 0 || Mathf.Abs(inputX) <= 0.01f)
             return false;
 
-        if (!isTouchingWall || isGrounded || rigid.linearVelocity.y >= 0f)
-            return false;
+        return Mathf.Sign(inputX) == wallDirection;
+    }
 
-        float input = inputReader.Move.x;
-        return wallDirection != 0 && Mathf.Sign(input) == wallDirection && Mathf.Abs(input) > 0.01f;
+    public void SetInputLocked(bool locked)
+    {
+        inputLocked = locked;
+        inputReader.ClearTransientInputs();
+
+        if (locked)
+        {
+            inputReader.SetMove(Vector2.zero);
+            motor.StopHorizontalMovement();
+            ChangeState(MovementState.Idle);
+        }
     }
 
     T GetOrAdd<T>() where T : Component
@@ -243,13 +264,29 @@ public class Player : Character
         inputReader.SetDash(inputValue.isPressed);
     }
 
-    public void OnTurnCatch(InputValue inputValue)
+    public void OnSkill1(InputValue inputValue)
     {
+        inputReader.SetSkill(0, inputValue.isPressed);
+    }
+
+    public void OnSkill2(InputValue inputValue)
+    {
+        inputReader.SetSkill(1, inputValue.isPressed);
+    }
+
+    public void OnSkill3(InputValue inputValue)
+    {
+        inputReader.SetSkill(2, inputValue.isPressed);
     }
 
     public void OnParry(InputValue inputValue)
     {
         inputReader.SetParry(inputValue.isPressed);
+    }
+
+    public void OnInteract(InputValue inputValue)
+    {
+        inputReader.SetInteract(inputValue.isPressed);
     }
     #endregion
 }

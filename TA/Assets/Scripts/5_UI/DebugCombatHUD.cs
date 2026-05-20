@@ -6,6 +6,7 @@ public class DebugCombatHUD : MonoBehaviour
     PlayerResourceController resources;
     EnemyHitReceiver dummy;
     GUIStyle titleStyle;
+    GUIStyle labelStyle;
 
     void Update()
     {
@@ -44,14 +45,19 @@ public class DebugCombatHUD : MonoBehaviour
         string condition = player != null ? player.conditionState.ToString() : "None";
         string vertical = player != null ? player.Rigidbody.linearVelocity.y.ToString("0.00") : "0.00";
 
-        Rect panel = new Rect(20f, Screen.height - 194f, 400f, 166f);
+        float width = 330f;
+        float height = 132f;
+        float x = Screen.width - width - 16f;
+        float y = 16f;
+
+        Rect panel = new Rect(x, y, width, height);
         GUI.Box(panel, "Debug Combat HUD");
-        GUI.Label(new Rect(32f, Screen.height - 162f, 360f, 22f), $"ATP: {atp:0}/{maxATP:0}", titleStyle);
-        GUI.Label(new Rect(32f, Screen.height - 138f, 360f, 22f), $"Training Dummy HP: {dummyHp}");
-        GUI.Label(new Rect(32f, Screen.height - 114f, 360f, 22f), $"Counter Window: {counter}");
-        GUI.Label(new Rect(32f, Screen.height - 90f, 360f, 22f), $"Movement: {movement} / Action: {action} / Condition: {condition}");
-        GUI.Label(new Rect(32f, Screen.height - 66f, 360f, 22f), $"Grounded: {grounded} / JumpChance: {jumps} / VelY: {vertical}");
-        GUI.Label(new Rect(32f, Screen.height - 42f, 360f, 22f), "Keys: Arrow Move / Z Jump / Space Parry / C Dodge / 1~3 Skill");
+        GUI.Label(new Rect(x + 10f, y + 24f, 305f, 18f), $"ATP: {atp:0}/{maxATP:0}", titleStyle);
+        GUI.Label(new Rect(x + 10f, y + 42f, 305f, 18f), $"Dummy HP: {dummyHp}", labelStyle);
+        GUI.Label(new Rect(x + 10f, y + 60f, 305f, 18f), $"Counter: {counter}", labelStyle);
+        GUI.Label(new Rect(x + 10f, y + 78f, 305f, 18f), $"Move: {movement} / Act: {action} / Cond: {condition}", labelStyle);
+        GUI.Label(new Rect(x + 10f, y + 96f, 305f, 18f), $"Ground: {grounded} / Jump: {jumps} / VelY: {vertical}", labelStyle);
+        GUI.Label(new Rect(x + 10f, y + 114f, 305f, 18f), "Keys: ←→ Move / Z Jump / X Attack / ↑ Talk", labelStyle);
     }
 
     void EnsureStyle()
@@ -59,7 +65,10 @@ public class DebugCombatHUD : MonoBehaviour
         if (titleStyle != null)
             return;
 
-        titleStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
+        titleStyle = new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold, fontSize = 11 };
         titleStyle.normal.textColor = Color.white;
+
+        labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 10 };
+        labelStyle.normal.textColor = Color.white;
     }
 }

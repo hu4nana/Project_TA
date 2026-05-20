@@ -50,10 +50,8 @@ public class RuntimeDebugOverlay : MonoBehaviour
 
     void DrawSkillInfo()
     {
-        if (!MeleeSkillBehaviour.HasDebugHitbox)
-            return;
-
-        DrawBox(MeleeSkillBehaviour.DebugHitboxCenter, MeleeSkillBehaviour.DebugHitboxSize, Color.yellow, "Skill Hitbox");
+        if (CombatHitbox.HasDebugHitbox)
+            DrawBox(CombatHitbox.DebugHitboxCenter, CombatHitbox.DebugHitboxSize, CombatHitbox.DebugColor, CombatHitbox.DebugLabel);
     }
 
     void DrawBounds(Bounds bounds, Color color, string label)

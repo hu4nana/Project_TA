@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerInputReader : MonoBehaviour
 {
@@ -10,27 +9,16 @@ public class PlayerInputReader : MonoBehaviour
     bool attackPressed;
     bool dashPressed;
     bool parryPressed;
-
-    void Update()
-    {
-        Keyboard keyboard = Keyboard.current;
-        Gamepad gamepad = Gamepad.current;
-
-        bool keyboardJumpPressed = keyboard != null && keyboard.zKey.wasPressedThisFrame;
-        bool gamepadJumpPressed = gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
-        bool keyboardHeld = keyboard != null && keyboard.zKey.isPressed;
-        bool gamepadHeld = gamepad != null && gamepad.buttonSouth.isPressed;
-
-        if (keyboardJumpPressed || gamepadJumpPressed)
-            jumpPressed = true;
-
-        JumpHeld = keyboardHeld || gamepadHeld;
-    }
+    bool interactPressed;
+    int skillPressedIndex = -1;
 
     public void SetMove(Vector2 value) => Move = value;
 
     public void SetJump(bool pressed)
     {
+        JumpHeld = pressed;
+        if (pressed)
+            jumpPressed = true;
     }
 
     public void SetAttack(bool pressed)
@@ -49,6 +37,18 @@ public class PlayerInputReader : MonoBehaviour
     {
         if (pressed)
             parryPressed = true;
+    }
+
+    public void SetInteract(bool pressed)
+    {
+        if (pressed)
+            interactPressed = true;
+    }
+
+    public void SetSkill(int index, bool pressed)
+    {
+        if (pressed)
+            skillPressedIndex = index;
     }
 
     public bool ConsumeJumpPressed()
@@ -77,5 +77,29 @@ public class PlayerInputReader : MonoBehaviour
         bool value = parryPressed;
         parryPressed = false;
         return value;
+    }
+
+    public bool ConsumeInteractPressed()
+    {
+        bool value = interactPressed;
+        interactPressed = false;
+        return value;
+    }
+
+    public bool ConsumeSkillPressed(out int index)
+    {
+        index = skillPressedIndex;
+        skillPressedIndex = -1;
+        return index >= 0;
+    }
+
+    public void ClearTransientInputs()
+    {
+        jumpPressed = false;
+        attackPressed = false;
+        dashPressed = false;
+        parryPressed = false;
+        interactPressed = false;
+        skillPressedIndex = -1;
     }
 }

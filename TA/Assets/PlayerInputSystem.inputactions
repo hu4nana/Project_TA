@@ -42,18 +42,45 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "TurnCatch",
+                    "name": "Parry",
                     "type": "Button",
-                    "id": "75663ea5-ad6c-459d-9da0-1b8f9dc84c5d",
+                    "id": "4e47f4f7-9da6-4e6f-a3a2-226edbc8d306",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Parry",
+                    "name": "Skill1",
                     "type": "Button",
-                    "id": "4e47f4f7-9da6-4e6f-a3a2-226edbc8d306",
+                    "id": "bfb3bb36-8576-4b8f-ae49-62f007af2abb",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Skill2",
+                    "type": "Button",
+                    "id": "5ebe8219-023c-45b7-8454-2e6eb8998cc9",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Skill3",
+                    "type": "Button",
+                    "id": "b59b8e8c-6cbb-464a-bd9d-75cded4eade3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "d4fbc8f4-5a96-4b5d-9fd0-1bc4a9139451",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -162,12 +189,45 @@
                 },
                 {
                     "name": "",
-                    "id": "f9ad356d-2223-48f6-956f-496df896ede3",
-                    "path": "<Keyboard>/v",
+                    "id": "07a9c905-679e-483d-bc21-17e67c569bf8",
+                    "path": "<Keyboard>/1",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Gamepad",
-                    "action": "TurnCatch",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Skill1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b0ed4a73-e3ed-455d-9a74-34ed4dd6607d",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Skill2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "791a523b-f753-4c2f-9b2f-7b8e1cdb0a98",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Skill3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6695bf6f-d92c-4434-99c4-5ad58d61c3f8",
+                    "path": "<Keyboard>/upArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Interact",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

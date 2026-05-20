@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(PlayerSkillLoadout))]
 public class PlayerSkillCaster : MonoBehaviour
@@ -35,7 +34,6 @@ public class PlayerSkillCaster : MonoBehaviour
         }
 
         TickCooldowns(deltaTime);
-        HandleSelectionInput(character, resources);
     }
 
     void TickCooldowns(float deltaTime)
@@ -55,17 +53,6 @@ public class PlayerSkillCaster : MonoBehaviour
             else
                 cooldowns[key] = next;
         }
-    }
-
-    void HandleSelectionInput(Character character, PlayerResourceController resources)
-    {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
-            return;
-
-        if (keyboard.digit1Key.wasPressedThisFrame) TryCast(character, resources, 0);
-        if (keyboard.digit2Key.wasPressedThisFrame) TryCast(character, resources, 1);
-        if (keyboard.digit3Key.wasPressedThisFrame) TryCast(character, resources, 2);
     }
 
     public bool TryCast(Character character, PlayerResourceController resources, int index)
