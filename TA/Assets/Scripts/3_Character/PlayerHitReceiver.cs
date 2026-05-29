@@ -17,7 +17,7 @@ public class PlayerHitReceiver : MonoBehaviour, IDamageable
         defense = playerDefense;
         resources = resourceController;
         motor = playerMotor;
-        feedbacks = owner.GetComponent<PlayerFeedbacks>();
+        feedbacks = owner.GetComponentInChildren<PlayerFeedbacks>(true);
     }
 
     public void Tick(float deltaTime)

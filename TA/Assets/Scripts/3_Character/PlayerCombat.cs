@@ -23,10 +23,11 @@ public class PlayerCombat : MonoBehaviour
 
     void Awake()
     {
-        player = GetComponent<Player>();
-        motor = GetComponent<PlayerMotor>();
-        resources = GetComponent<PlayerResourceController>();
-        feedbacks = GetComponent<PlayerFeedbacks>();
+        player = GetComponentInParent<Player>();
+        Transform root = player != null ? player.transform : transform;
+        motor = root.GetComponentInChildren<PlayerMotor>(true);
+        resources = root.GetComponentInChildren<PlayerResourceController>(true);
+        feedbacks = root.GetComponentInChildren<PlayerFeedbacks>(true);
     }
 
     public bool TryStartAttack(Character character)
@@ -64,8 +65,8 @@ public class PlayerCombat : MonoBehaviour
     {
         Vector2 dir = motor != null && motor.FacingRight ? Vector2.right : Vector2.left;
         CombatHitbox.ApplyBox(
-            gameObject,
-            transform.position,
+            player != null ? player.gameObject : gameObject,
+            player != null ? player.transform.position : transform.position,
             dir,
             basicAttack,
             "Basic Attack Hitbox",

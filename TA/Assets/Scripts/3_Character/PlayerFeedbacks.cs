@@ -28,7 +28,10 @@ public class PlayerFeedbacks : MonoBehaviour
     void Awake()
     {
         if (targetRenderer == null)
-            targetRenderer = GetComponent<SpriteRenderer>();
+            targetRenderer = GetComponentInParent<SpriteRenderer>();
+
+        if (targetRenderer == null)
+            targetRenderer = GetComponentInChildren<SpriteRenderer>(true);
 
         if (targetRenderer != null)
             baseColor = targetRenderer.color;

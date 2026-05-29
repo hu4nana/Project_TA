@@ -26,7 +26,11 @@ public class EnemyAttackEmitter : MonoBehaviour
         if (cooldownTimer > 0f)
             return;
 
-        PlayerHitReceiver receiver = other.GetComponent<PlayerHitReceiver>();
+        Player player = other.GetComponentInParent<Player>();
+        PlayerHitReceiver receiver = player != null
+            ? player.GetComponentInChildren<PlayerHitReceiver>(true)
+            : other.GetComponentInParent<PlayerHitReceiver>();
+
         if (!receiver)
             return;
 

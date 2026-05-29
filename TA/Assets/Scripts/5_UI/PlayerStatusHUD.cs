@@ -28,7 +28,7 @@ public class PlayerStatusHUD : MonoBehaviour
             player = FindFirstObjectByType<Player>();
 
         if (resources == null && player != null)
-            resources = player.GetComponent<PlayerResourceController>();
+            resources = player.GetComponentInChildren<PlayerResourceController>(true);
     }
 
     void BindFillImages()

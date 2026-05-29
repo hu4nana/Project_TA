@@ -13,7 +13,7 @@ public class DebugCombatHUD : MonoBehaviour
         if (player == null)
         {
             player = FindFirstObjectByType<Player>();
-            resources = player != null ? player.GetComponent<PlayerResourceController>() : null;
+            resources = player != null ? player.GetComponentInChildren<PlayerResourceController>(true) : null;
         }
 
         if (dummy == null)
@@ -41,7 +41,7 @@ public class DebugCombatHUD : MonoBehaviour
         string movement = player != null ? player.movementState.ToString() : "None";
         string action = player != null ? player.actionState.ToString() : "None";
         string grounded = player != null && player.IsGrounded ? "Yes" : "No";
-        string jumps = player != null ? $"{player.jumpChance}/{player.maxJumpChance}" : "0/0";
+        string jumps = player != null ? $"{player.AirJumpRemaining}/{player.MaxAirJumpCount}" : "0/0";
         string condition = player != null ? player.conditionState.ToString() : "None";
         string vertical = player != null ? player.Rigidbody.linearVelocity.y.ToString("0.00") : "0.00";
 
@@ -56,7 +56,7 @@ public class DebugCombatHUD : MonoBehaviour
         GUI.Label(new Rect(x + 10f, y + 42f, 305f, 18f), $"Dummy HP: {dummyHp}", labelStyle);
         GUI.Label(new Rect(x + 10f, y + 60f, 305f, 18f), $"Counter: {counter}", labelStyle);
         GUI.Label(new Rect(x + 10f, y + 78f, 305f, 18f), $"Move: {movement} / Act: {action} / Cond: {condition}", labelStyle);
-        GUI.Label(new Rect(x + 10f, y + 96f, 305f, 18f), $"Ground: {grounded} / Jump: {jumps} / VelY: {vertical}", labelStyle);
+        GUI.Label(new Rect(x + 10f, y + 96f, 305f, 18f), $"Ground: {grounded} / AirJump: {jumps} / VelY: {vertical}", labelStyle);
         GUI.Label(new Rect(x + 10f, y + 114f, 305f, 18f), "Keys: ←→ Move / Z Jump / X Attack / ↑ Talk", labelStyle);
     }
 

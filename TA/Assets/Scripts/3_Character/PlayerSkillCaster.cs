@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(PlayerSkillLoadout))]
 public class PlayerSkillCaster : MonoBehaviour
 {
     readonly Dictionary<int, float> cooldowns = new();
@@ -18,10 +17,11 @@ public class PlayerSkillCaster : MonoBehaviour
 
     void Awake()
     {
-        player = GetComponent<Player>();
-        motor = GetComponent<PlayerMotor>();
-        loadout = GetComponent<PlayerSkillLoadout>();
-        feedbacks = GetComponent<PlayerFeedbacks>();
+        player = GetComponentInParent<Player>();
+        Transform root = player != null ? player.transform : transform;
+        motor = root.GetComponentInChildren<PlayerMotor>(true);
+        loadout = root.GetComponentInChildren<PlayerSkillLoadout>(true);
+        feedbacks = root.GetComponentInChildren<PlayerFeedbacks>(true);
     }
 
     public void Tick(Character character, PlayerResourceController resources, float deltaTime)
@@ -83,7 +83,8 @@ public class PlayerSkillCaster : MonoBehaviour
         cooldowns[index] = skillPrefab.Cooldown;
         character.ChangeState(ActionState.Skill);
 
-        GameObject skillObject = Instantiate(skillPrefab.gameObject, transform.position, Quaternion.identity);
+        Vector3 castPosition = player != null ? player.transform.position : transform.position;
+        GameObject skillObject = Instantiate(skillPrefab.gameObject, castPosition, Quaternion.identity);
         SkillBehaviour skillInstance = skillObject.GetComponent<SkillBehaviour>();
         skillInstance.Cast(context);
         feedbacks?.PlaySkillCast();

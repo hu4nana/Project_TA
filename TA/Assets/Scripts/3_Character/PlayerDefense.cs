@@ -6,8 +6,11 @@ public class PlayerDefense : MonoBehaviour
 
     void Awake()
     {
-        feedbacks = GetComponent<PlayerFeedbacks>();
+        Player player = GetComponentInParent<Player>();
+        Transform root = player != null ? player.transform : transform;
+        feedbacks = root.GetComponentInChildren<PlayerFeedbacks>(true);
     }
+
     [Header("Parry")]
     [SerializeField] float parryWindow = 0.15f;
     [SerializeField] float parryRecovery = 0.1f;

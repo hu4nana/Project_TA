@@ -1,6 +1,5 @@
 using UnityEngine;
 
-[RequireComponent(typeof(SpriteRenderer))]
 public class PlayerFeedbackVisualizer : MonoBehaviour
 {
     [SerializeField] Color normalColor = Color.white;
@@ -15,9 +14,10 @@ public class PlayerFeedbackVisualizer : MonoBehaviour
 
     void Awake()
     {
-        player = GetComponent<Player>();
-        defense = GetComponent<PlayerDefense>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        player = GetComponentInParent<Player>();
+        Transform root = player != null ? player.transform : transform;
+        defense = root.GetComponentInChildren<PlayerDefense>(true);
+        spriteRenderer = root.GetComponentInChildren<SpriteRenderer>(true);
     }
 
     void LateUpdate()
@@ -62,7 +62,8 @@ public class PlayerFeedbackVisualizer : MonoBehaviour
             labelStyle.normal.textColor = Color.white;
         }
 
-        Vector3 screen = Camera.main != null ? Camera.main.WorldToScreenPoint(transform.position + Vector3.up * 1.8f) : Vector3.zero;
+        Vector3 worldPosition = player != null ? player.transform.position : transform.position;
+        Vector3 screen = Camera.main != null ? Camera.main.WorldToScreenPoint(worldPosition + Vector3.up * 1.8f) : Vector3.zero;
         if (screen.z < 0f)
             return;
 

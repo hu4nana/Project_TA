@@ -15,8 +15,8 @@ public class SkillSelectionUI : MonoBehaviour
             Player player = FindFirstObjectByType<Player>();
             if (player != null)
             {
-                loadout = player.GetComponent<PlayerSkillLoadout>();
-                caster = player.GetComponent<PlayerSkillCaster>();
+                loadout = player.GetComponentInChildren<PlayerSkillLoadout>(true);
+                caster = player.GetComponentInChildren<PlayerSkillCaster>(true);
             }
         }
     }

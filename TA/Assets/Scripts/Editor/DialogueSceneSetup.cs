@@ -59,8 +59,20 @@ public static class DialogueSceneSetup
     static void EnsurePlayerInteractor()
     {
         GameObject player = GameObject.Find("Player");
-        if (player != null && player.GetComponent<PlayerInteractor>() == null)
-            player.AddComponent<PlayerInteractor>();
+        if (player == null || player.GetComponentInChildren<PlayerInteractor>(true) != null)
+            return;
+
+        Transform systems = player.transform.Find("Systems");
+        if (systems == null)
+        {
+            GameObject systemsObject = new("Systems");
+            systemsObject.transform.SetParent(player.transform, false);
+            systems = systemsObject.transform;
+        }
+
+        GameObject interactionObject = new("06_Interaction");
+        interactionObject.transform.SetParent(systems, false);
+        interactionObject.AddComponent<PlayerInteractor>();
     }
 
     static void EnsureDialogueSystem()

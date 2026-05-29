@@ -1,16 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(PlayerInputReader))]
-[RequireComponent(typeof(PlayerMotor))]
-[RequireComponent(typeof(PlayerCombat))]
-[RequireComponent(typeof(PlayerDefense))]
-[RequireComponent(typeof(PlayerInteractor))]
-[RequireComponent(typeof(PlayerResourceController))]
-[RequireComponent(typeof(PlayerHitReceiver))]
-[RequireComponent(typeof(PlayerSkillCaster))]
-[RequireComponent(typeof(PlayerSkillLoadout))]
-[RequireComponent(typeof(PlayerFeedbacks))]
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(BoxCollider2D))]
+[RequireComponent(typeof(PlayerInput))]
 public class Player : Character
 {
     [Header("Jump Assist")]
@@ -37,6 +30,9 @@ public class Player : Character
     float groundIgnoreTimer;
     bool inputLocked;
 
+    public int MaxAirJumpCount => Mathf.Max(0, maxJumpChance - 1);
+    public int AirJumpRemaining => jumpChance;
+
     private void Start()
     {
         Initialize();
@@ -46,16 +42,20 @@ public class Player : Character
     {
         base.Initialize();
 
-        inputReader = GetOrAdd<PlayerInputReader>();
-        motor = GetOrAdd<PlayerMotor>();
-        combat = GetOrAdd<PlayerCombat>();
-        defense = GetOrAdd<PlayerDefense>();
-        interactor = GetOrAdd<PlayerInteractor>();
-        resources = GetOrAdd<PlayerResourceController>();
-        hitReceiver = GetOrAdd<PlayerHitReceiver>();
-        GetOrAdd<PlayerSkillLoadout>();
-        GetOrAdd<PlayerFeedbacks>();
-        skillCaster = GetOrAdd<PlayerSkillCaster>();
+        inputReader = GetRequiredInChildren<PlayerInputReader>();
+        motor = GetRequiredInChildren<PlayerMotor>();
+        combat = GetRequiredInChildren<PlayerCombat>();
+        defense = GetRequiredInChildren<PlayerDefense>();
+        interactor = GetRequiredInChildren<PlayerInteractor>();
+        resources = GetRequiredInChildren<PlayerResourceController>();
+        hitReceiver = GetRequiredInChildren<PlayerHitReceiver>();
+        GetRequiredInChildren<PlayerSkillLoadout>();
+        GetRequiredInChildren<PlayerFeedbacks>();
+        skillCaster = GetRequiredInChildren<PlayerSkillCaster>();
+        jumpChance = MaxAirJumpCount;
+
+        if (motor == null || hitReceiver == null || defense == null || resources == null)
+            return;
 
         motor.Initialize(this);
         hitReceiver.Initialize(this, defense, resources, motor);
@@ -76,18 +76,24 @@ public class Player : Character
 
         if (inputLocked)
         {
-            if (inputReader.ConsumeAttackPressed())
+            if (inputReader.HasAttackPressed)
+            {
                 DialogueController.Instance?.Advance();
+                inputReader.ConsumeAttackPressed();
+            }
 
+            inputReader.TickBuffers();
             motor.StopHorizontalMovement();
             ChangeState(MovementState.Idle);
             return;
         }
 
-        if (!inputReader.JumpHeld)
+        HandleActions();
+
+        if (inputReader.ConsumeJumpReleased())
             motor.CutJump();
 
-        HandleActions();
+        inputReader.TickBuffers();
         UpdateMovementState();
     }
 
@@ -99,7 +105,7 @@ public class Player : Character
         if (inputLocked)
         {
             motor.StopHorizontalMovement();
-            motor.Tick(Time.fixedDeltaTime);
+            motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
             return;
         }
 
@@ -115,28 +121,31 @@ public class Player : Character
             motor.StopHorizontalMovement();
         }
 
-        motor.Tick(Time.fixedDeltaTime);
+        motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
     }
 
     void HandleActions()
     {
-        if (inputReader.ConsumeParryPressed())
-            defense.TryStartParry(this);
+        if (inputReader.HasParryPressed && defense.TryStartParry(this))
+            inputReader.ConsumeParryPressed();
 
-        if (inputReader.ConsumeDashPressed() && defense.TryStartDodge(this))
+        if (inputReader.HasDashPressed && defense.TryStartDodge(this))
+        {
             motor.StartDodge(defense.DodgeDashDuration);
+            inputReader.ConsumeDashPressed();
+        }
 
-        if (inputReader.ConsumeJumpPressed())
-            TryJump();
+        if (inputReader.HasJumpPressed && TryJump())
+            inputReader.ConsumeJumpPressed();
 
-        if (inputReader.ConsumeAttackPressed() && !skillCaster.IsCasting)
-            combat.TryStartAttack(this);
+        if (inputReader.HasAttackPressed && !skillCaster.IsCasting && combat.TryStartAttack(this))
+            inputReader.ConsumeAttackPressed();
 
-        if (inputReader.ConsumeSkillPressed(out int skillIndex))
-            skillCaster.TryCast(this, resources, skillIndex);
+        if (inputReader.TryGetSkillPressed(out int skillIndex) && skillCaster.TryCast(this, resources, skillIndex))
+            inputReader.ConsumeSkillPressed();
 
-        if (inputReader.ConsumeInteractPressed())
-            interactor.TryInteract(this);
+        if (inputReader.HasInteractPressed && interactor.TryInteract(this))
+            inputReader.ConsumeInteractPressed();
     }
 
     void UpdateMovementState()
@@ -171,7 +180,7 @@ public class Player : Character
         {
             coyoteTimer = coyoteTime;
             if (!wasGrounded)
-                jumpChance = maxJumpChance;
+                jumpChance = MaxAirJumpCount;
         }
         else
         {
@@ -179,27 +188,35 @@ public class Player : Character
         }
     }
 
-    void TryJump()
+    bool TryJump()
     {
         bool canGroundJump = isGrounded || coyoteTimer > 0f;
 
         if (canGroundJump)
         {
-            jumpChance = Mathf.Max(0, maxJumpChance - 1);
+            StartJump(PlayerJumpType.Ground);
+            return true;
         }
-        else if (jumpChance > 0)
+
+        if (jumpChance > 0)
         {
             jumpChance--;
+            StartJump(PlayerJumpType.Air);
+            return true;
         }
-        else
-        {
-            return;
-        }
+
+        return false;
+    }
+
+    void StartJump(PlayerJumpType jumpType)
+    {
+        if (jumpType == PlayerJumpType.Ground)
+            jumpChance = MaxAirJumpCount;
 
         coyoteTimer = 0f;
         isGrounded = false;
         groundIgnoreTimer = groundIgnoreAfterJump;
-        motor.Jump();
+        motor.Jump(jumpType);
     }
 
     void UpdateWallState()
@@ -237,10 +254,13 @@ public class Player : Character
         }
     }
 
-    T GetOrAdd<T>() where T : Component
+    T GetRequiredInChildren<T>() where T : Component
     {
-        T component = GetComponent<T>();
-        return component ? component : gameObject.AddComponent<T>();
+        T component = GetComponentInChildren<T>(true);
+        if (component == null)
+            Debug.LogError($"Player is missing required child component: {typeof(T).Name}", this);
+
+        return component;
     }
 
     #region InputActions
@@ -251,42 +271,42 @@ public class Player : Character
 
     public void OnJump(InputValue inputValue)
     {
-        inputReader.SetJump(inputValue.isPressed);
+        inputReader.SetJump(inputValue.Get<float>() > 0.5f);
     }
 
     public void OnAttack(InputValue inputValue)
     {
-        inputReader.SetAttack(inputValue.isPressed);
+        inputReader.SetAttack(inputValue.Get<float>() > 0.5f);
     }
 
     public void OnDash(InputValue inputValue)
     {
-        inputReader.SetDash(inputValue.isPressed);
+        inputReader.SetDash(inputValue.Get<float>() > 0.5f);
     }
 
     public void OnSkill1(InputValue inputValue)
     {
-        inputReader.SetSkill(0, inputValue.isPressed);
+        inputReader.SetSkill(0, inputValue.Get<float>() > 0.5f);
     }
 
     public void OnSkill2(InputValue inputValue)
     {
-        inputReader.SetSkill(1, inputValue.isPressed);
+        inputReader.SetSkill(1, inputValue.Get<float>() > 0.5f);
     }
 
     public void OnSkill3(InputValue inputValue)
     {
-        inputReader.SetSkill(2, inputValue.isPressed);
+        inputReader.SetSkill(2, inputValue.Get<float>() > 0.5f);
     }
 
     public void OnParry(InputValue inputValue)
     {
-        inputReader.SetParry(inputValue.isPressed);
+        inputReader.SetParry(inputValue.Get<float>() > 0.5f);
     }
 
     public void OnInteract(InputValue inputValue)
     {
-        inputReader.SetInteract(inputValue.isPressed);
+        inputReader.SetInteract(inputValue.Get<float>() > 0.5f);
     }
     #endregion
 }
