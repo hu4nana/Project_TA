@@ -3597,33 +3597,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
-      propertyPath: jumpHoldDuration
-      value: 0.22
+      propertyPath: jumpForce
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
-      propertyPath: heldJumpMinVelocity
-      value: 4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: fallGravityMultiplier
-      value: 1.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: hangVelocityThreshold
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: jumpReleaseDownVelocity
-      value: 3.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: lowJumpGravityMultiplier
-      value: 2.2
+      propertyPath: jumpCutMultiplier
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5309256311076616482, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}

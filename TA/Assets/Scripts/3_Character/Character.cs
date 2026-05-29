@@ -11,7 +11,6 @@ public class Character : MonoBehaviour
 
     [Header("Movement")]
     public float walkSpeed;
-    public float jumpForce;
     public float dashForce;
 
     [Header("Jump")]

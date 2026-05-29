@@ -1,18 +1,19 @@
 using UnityEngine;
 
-public enum PlayerJumpType
-{
-    Ground,
-    Air
-}
-
 public class PlayerMotor : MonoBehaviour
 {
     [Header("Horizontal")]
+    [Tooltip("공중에서 좌우 이동이 얼마나 먹는지. 1이면 지상과 같고, 낮을수록 공중 제어가 약해집니다.")]
     [SerializeField] float airControlMultiplier = 0.75f;
 
+    [Header("Jump")]
+    [Tooltip("점프 버튼을 눌렀을 때 위로 튀어오르는 힘. 점프 높이를 가장 직접적으로 조절합니다.")]
+    [SerializeField] float jumpForce = 10f;
+
     [Header("Gravity")]
+    [Tooltip("떨어질 때 추가 중력 배율. 높을수록 더 빨리 떨어집니다.")]
     [SerializeField] float fallGravityMultiplier = 1.8f;
+    [Tooltip("상승 중 추가 중력 배율. 높을수록 점프가 낮고 타이트해집니다.")]
     [SerializeField] float lowJumpGravityMultiplier = 2.2f;
 
     Character character;
@@ -24,7 +25,6 @@ public class PlayerMotor : MonoBehaviour
 
     public bool IsDodging => dodgeTimer > 0f;
     public bool FacingRight { get; private set; } = true;
-    public PlayerJumpType LastJumpType { get; private set; }
 
     public void Initialize(Character owner)
     {
@@ -50,9 +50,6 @@ public class PlayerMotor : MonoBehaviour
         if (!Mathf.Approximately(rigid.gravityScale, defaultGravityScale))
             rigid.gravityScale = defaultGravityScale;
 
-        if (!jumpHeld)
-            CutJump();
-
         ApplyBetterGravity(deltaTime);
     }
 
@@ -68,11 +65,10 @@ public class PlayerMotor : MonoBehaviour
             SetFacing(inputX > 0f);
     }
 
-    public void Jump(PlayerJumpType jumpType)
+    public void Jump()
     {
-        LastJumpType = jumpType;
         rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0f);
-        rigid.AddForce(Vector2.up * character.jumpForce, ForceMode2D.Impulse);
+        rigid.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
     }
 
     public void CutJump()

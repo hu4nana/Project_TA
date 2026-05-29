@@ -292,7 +292,6 @@ MonoBehaviour:
   conditionState: 0
   MaxHP: 100
   walkSpeed: 5
-  jumpForce: 7
   dashForce: 14
   maxJumpChance: 2
   jumpChance: 0
@@ -797,14 +796,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMotor
   airControlMultiplier: 0.75
+  jumpForce: 10
   fallGravityMultiplier: 1.8
   lowJumpGravityMultiplier: 2.2
-  hangGravityMultiplier: 0.55
-  hangVelocityThreshold: 1.2
-  maxFallSpeed: 18
-  jumpHoldDuration: 0.25
-  jumpHoldAcceleration: 35
-  jumpCutVelocityMultiplier: 0.35
 --- !u!1 &8877137402878698103
 GameObject:
   m_ObjectHideFlags: 0

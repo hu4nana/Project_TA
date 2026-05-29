@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerInputReader : MonoBehaviour
 {
@@ -7,8 +8,8 @@ public class PlayerInputReader : MonoBehaviour
     public Vector2 Move { get; private set; }
     public bool JumpHeld { get; private set; }
 
+    bool eventJumpHeld;
     int jumpBuffer;
-    int jumpReleaseBuffer;
     int attackBuffer;
     int dashBuffer;
     int parryBuffer;
@@ -26,7 +27,6 @@ public class PlayerInputReader : MonoBehaviour
     public void TickBuffers()
     {
         Tick(ref jumpBuffer);
-        Tick(ref jumpReleaseBuffer);
         Tick(ref attackBuffer);
         Tick(ref dashBuffer);
         Tick(ref parryBuffer);
@@ -37,16 +37,31 @@ public class PlayerInputReader : MonoBehaviour
             skillPressedIndex = -1;
     }
 
+    void Update()
+    {
+        Keyboard keyboard = Keyboard.current;
+        Gamepad gamepad = Gamepad.current;
+
+        bool keyboardHeld = keyboard != null && keyboard.zKey.isPressed;
+        bool gamepadHeld = gamepad != null && gamepad.buttonSouth.isPressed;
+        bool keyboardPressed = keyboard != null && keyboard.zKey.wasPressedThisFrame;
+        bool gamepadPressed = gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
+
+        if (keyboardPressed || gamepadPressed)
+            jumpBuffer = BufferFrames;
+
+        SetJumpHeldState(eventJumpHeld || keyboardHeld || gamepadHeld);
+    }
+
     public void SetMove(Vector2 value) => Move = value;
 
     public void SetJump(bool pressed)
     {
-        if (JumpHeld && !pressed)
-            jumpReleaseBuffer = BufferFrames;
-
-        JumpHeld = pressed;
+        eventJumpHeld = pressed;
         if (pressed)
             jumpBuffer = BufferFrames;
+
+        SetJumpHeldState(pressed);
     }
 
     public void SetAttack(bool pressed)
@@ -88,13 +103,6 @@ public class PlayerInputReader : MonoBehaviour
     public void ConsumeParryPressed() => parryBuffer = 0;
     public void ConsumeInteractPressed() => interactBuffer = 0;
 
-    public bool ConsumeJumpReleased()
-    {
-        bool value = jumpReleaseBuffer > 0;
-        jumpReleaseBuffer = 0;
-        return value;
-    }
-
     public bool TryGetSkillPressed(out int index)
     {
         index = skillPressedIndex;
@@ -110,13 +118,17 @@ public class PlayerInputReader : MonoBehaviour
     public void ClearTransientInputs()
     {
         jumpBuffer = 0;
-        jumpReleaseBuffer = 0;
         attackBuffer = 0;
         dashBuffer = 0;
         parryBuffer = 0;
         interactBuffer = 0;
         skillBuffer = 0;
         skillPressedIndex = -1;
+    }
+
+    void SetJumpHeldState(bool held)
+    {
+        JumpHeld = held;
     }
 
     void Tick(ref int buffer)

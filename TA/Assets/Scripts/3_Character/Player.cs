@@ -89,10 +89,6 @@ public class Player : Character
         }
 
         HandleActions();
-
-        if (inputReader.ConsumeJumpReleased())
-            motor.CutJump();
-
         inputReader.TickBuffers();
         UpdateMovementState();
     }
@@ -194,29 +190,29 @@ public class Player : Character
 
         if (canGroundJump)
         {
-            StartJump(PlayerJumpType.Ground);
+            StartJump(true);
             return true;
         }
 
         if (jumpChance > 0)
         {
             jumpChance--;
-            StartJump(PlayerJumpType.Air);
+            StartJump(false);
             return true;
         }
 
         return false;
     }
 
-    void StartJump(PlayerJumpType jumpType)
+    void StartJump(bool isGroundJump)
     {
-        if (jumpType == PlayerJumpType.Ground)
+        if (isGroundJump)
             jumpChance = MaxAirJumpCount;
 
         coyoteTimer = 0f;
         isGrounded = false;
         groundIgnoreTimer = groundIgnoreAfterJump;
-        motor.Jump(jumpType);
+        motor.Jump();
     }
 
     void UpdateWallState()
@@ -271,7 +267,11 @@ public class Player : Character
 
     public void OnJump(InputValue inputValue)
     {
-        inputReader.SetJump(inputValue.Get<float>() > 0.5f);
+        bool pressed = inputValue.Get<float>() > 0.5f;
+        inputReader.SetJump(pressed);
+
+        if (!pressed && motor != null)
+            motor.CutJump();
     }
 
     public void OnAttack(InputValue inputValue)
