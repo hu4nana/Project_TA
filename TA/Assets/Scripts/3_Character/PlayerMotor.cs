@@ -11,25 +11,15 @@ public class PlayerMotor : MonoBehaviour
     [Header("Horizontal")]
     [SerializeField] float airControlMultiplier = 0.75f;
 
-    [Header("Jump Feel")]
-    [SerializeField] float jumpHoldDuration = 0.2f;
-    [SerializeField] float heldJumpMinVelocity = 4.5f;
-
     [Header("Gravity")]
-    [SerializeField] float fallGravityMultiplier = 2.4f;
-    [SerializeField] float lowJumpGravityMultiplier = 3.2f;
-    [SerializeField] float hangGravityMultiplier = 0.55f;
-    [SerializeField] float hangVelocityThreshold = 1.2f;
-    [SerializeField] float maxFallSpeed = 18f;
+    [SerializeField] float fallGravityMultiplier = 1.8f;
+    [SerializeField] float lowJumpGravityMultiplier = 2.2f;
 
     Character character;
     Rigidbody2D rigid;
 
     float dodgeTimer;
-    float jumpHoldTimer;
     float defaultGravityScale;
-    bool jumpActive;
-    bool jumpCutApplied;
     Vector2 dodgeVelocity;
 
     public bool IsDodging => dodgeTimer > 0f;
@@ -60,15 +50,10 @@ public class PlayerMotor : MonoBehaviour
         if (!Mathf.Approximately(rigid.gravityScale, defaultGravityScale))
             rigid.gravityScale = defaultGravityScale;
 
-        if (jumpActive && !jumpHeld && !jumpCutApplied && rigid.linearVelocity.y > 0f)
+        if (!jumpHeld)
             CutJump();
 
-        ApplyHeldJump(jumpHeld, deltaTime);
-        ApplyGravity(jumpHeld, deltaTime);
-        ClampFallSpeed();
-
-        if (rigid.linearVelocity.y <= 0f && character != null && character.IsGrounded)
-            jumpActive = false;
+        ApplyBetterGravity(deltaTime);
     }
 
     public void Move(float inputX)
@@ -86,22 +71,14 @@ public class PlayerMotor : MonoBehaviour
     public void Jump(PlayerJumpType jumpType)
     {
         LastJumpType = jumpType;
-        jumpActive = true;
-        jumpCutApplied = false;
-        jumpHoldTimer = jumpHoldDuration;
-        rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, character.jumpForce);
+        rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0f);
+        rigid.AddForce(Vector2.up * character.jumpForce, ForceMode2D.Impulse);
     }
 
     public void CutJump()
     {
-        if (jumpCutApplied)
-            return;
-
-        jumpCutApplied = true;
-        jumpHoldTimer = 0f;
-
         if (rigid.linearVelocity.y > 0f)
-            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0f);
+            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
     }
 
     public void StartDodge(float duration)
@@ -130,42 +107,17 @@ public class PlayerMotor : MonoBehaviour
 
     public void ApplyKnockback(Vector2 force)
     {
-        jumpActive = false;
-        jumpHoldTimer = 0f;
         rigid.linearVelocity = Vector2.zero;
         rigid.AddForce(force, ForceMode2D.Impulse);
     }
 
-    void ApplyHeldJump(bool jumpHeld, float deltaTime)
-    {
-        if (!jumpActive || !jumpHeld || jumpCutApplied || jumpHoldTimer <= 0f || rigid.linearVelocity.y <= 0f)
-            return;
-
-        jumpHoldTimer -= deltaTime;
-        if (rigid.linearVelocity.y < heldJumpMinVelocity)
-            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, heldJumpMinVelocity);
-    }
-
-    void ApplyGravity(bool jumpHeld, float deltaTime)
+    void ApplyBetterGravity(float deltaTime)
     {
         if (character == null || character.IsGrounded)
             return;
 
-        float multiplier;
-        if (jumpActive && jumpHeld && !jumpCutApplied && Mathf.Abs(rigid.linearVelocity.y) <= hangVelocityThreshold)
-            multiplier = hangGravityMultiplier;
-        else if (rigid.linearVelocity.y < 0f)
-            multiplier = fallGravityMultiplier;
-        else
-            multiplier = jumpHeld && !jumpCutApplied ? 1f : lowJumpGravityMultiplier;
-
+        float multiplier = rigid.linearVelocity.y < 0f ? fallGravityMultiplier : lowJumpGravityMultiplier;
         rigid.linearVelocity += Vector2.up * Physics2D.gravity.y * (multiplier - 1f) * deltaTime;
-    }
-
-    void ClampFallSpeed()
-    {
-        if (rigid.linearVelocity.y < -maxFallSpeed)
-            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, -maxFallSpeed);
     }
 
     void SetFacing(bool facingRight)

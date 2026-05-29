@@ -3608,7 +3608,7 @@ PrefabInstance:
     - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
       propertyPath: fallGravityMultiplier
-      value: 2.6
+      value: 1.8
       objectReference: {fileID: 0}
     - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
@@ -3623,7 +3623,7 @@ PrefabInstance:
     - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
       propertyPath: lowJumpGravityMultiplier
-      value: 3.5
+      value: 2.2
       objectReference: {fileID: 0}
     - target: {fileID: 5309256311076616482, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
