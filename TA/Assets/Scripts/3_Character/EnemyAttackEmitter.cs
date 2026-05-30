@@ -34,8 +34,19 @@ public class EnemyAttackEmitter : MonoBehaviour
         if (!receiver)
             return;
 
-        attackInfo.source = gameObject;
-        receiver.ReceiveAttack(attackInfo);
+        AttackInfo resolvedAttack = attackInfo;
+        resolvedAttack.source = gameObject;
+        resolvedAttack.knockback = ResolveKnockbackDirection(receiver.transform.position);
+        receiver.ReceiveAttack(resolvedAttack);
         cooldownTimer = repeatDelay;
+    }
+
+    Vector2 ResolveKnockbackDirection(Vector3 targetPosition)
+    {
+        float direction = Mathf.Sign(targetPosition.x - transform.position.x);
+        if (Mathf.Approximately(direction, 0f))
+            direction = transform.localScale.x >= 0f ? 1f : -1f;
+
+        return new Vector2(Mathf.Abs(attackInfo.knockback.x) * direction, attackInfo.knockback.y);
     }
 }

@@ -50,7 +50,7 @@ public class PlayerMotor : MonoBehaviour
         if (!Mathf.Approximately(rigid.gravityScale, defaultGravityScale))
             rigid.gravityScale = defaultGravityScale;
 
-        if (!jumpHeld)
+        if (character.conditionState == ConditionState.Normal && !jumpHeld)
             CutJump();
 
         ApplyBetterGravity(deltaTime, jumpHeld);
@@ -106,6 +106,8 @@ public class PlayerMotor : MonoBehaviour
 
     public void ApplyKnockback(Vector2 force)
     {
+        dodgeTimer = 0f;
+        rigid.gravityScale = defaultGravityScale;
         rigid.linearVelocity = Vector2.zero;
         rigid.AddForce(force, ForceMode2D.Impulse);
     }
