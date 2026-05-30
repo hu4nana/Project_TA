@@ -3595,16 +3595,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: jumpForce
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 824558987208343779, guid: c94386ea358ddc94cad1f176effb4a32,
-        type: 3}
-      propertyPath: jumpCutMultiplier
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5309256311076616482, guid: c94386ea358ddc94cad1f176effb4a32,
         type: 3}
       propertyPath: m_LocalPosition.x

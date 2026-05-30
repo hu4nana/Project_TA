@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerInputReader : MonoBehaviour
 {
@@ -37,22 +36,6 @@ public class PlayerInputReader : MonoBehaviour
             skillPressedIndex = -1;
     }
 
-    void Update()
-    {
-        Keyboard keyboard = Keyboard.current;
-        Gamepad gamepad = Gamepad.current;
-
-        bool keyboardHeld = keyboard != null && keyboard.zKey.isPressed;
-        bool gamepadHeld = gamepad != null && gamepad.buttonSouth.isPressed;
-        bool keyboardPressed = keyboard != null && keyboard.zKey.wasPressedThisFrame;
-        bool gamepadPressed = gamepad != null && gamepad.buttonSouth.wasPressedThisFrame;
-
-        if (keyboardPressed || gamepadPressed)
-            jumpBuffer = BufferFrames;
-
-        SetJumpHeldState(eventJumpHeld || keyboardHeld || gamepadHeld);
-    }
-
     public void SetMove(Vector2 value) => Move = value;
 
     public void SetJump(bool pressed)
@@ -61,7 +44,7 @@ public class PlayerInputReader : MonoBehaviour
         if (pressed)
             jumpBuffer = BufferFrames;
 
-        SetJumpHeldState(pressed);
+        SetJumpHeldState(eventJumpHeld);
     }
 
     public void SetAttack(bool pressed)
@@ -124,6 +107,12 @@ public class PlayerInputReader : MonoBehaviour
         interactBuffer = 0;
         skillBuffer = 0;
         skillPressedIndex = -1;
+    }
+
+    public void SetJumpHeld(bool held)
+    {
+        eventJumpHeld = held;
+        JumpHeld = held;
     }
 
     void SetJumpHeldState(bool held)

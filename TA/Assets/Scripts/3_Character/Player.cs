@@ -14,6 +14,8 @@ public class Player : Character
     [SerializeField] float wallCheckDistance = 0.08f;
     [SerializeField] Vector2 wallCheckSize = new(0.12f, 1.6f);
 
+    PlayerInput playerInput;
+    InputAction jumpAction;
     PlayerInputReader inputReader;
     PlayerMotor motor;
     PlayerCombat combat;
@@ -42,6 +44,8 @@ public class Player : Character
     {
         base.Initialize();
 
+        playerInput = GetComponent<PlayerInput>();
+        jumpAction = playerInput != null ? playerInput.actions.FindAction("Jump", false) : null;
         inputReader = GetRequiredInChildren<PlayerInputReader>();
         motor = GetRequiredInChildren<PlayerMotor>();
         combat = GetRequiredInChildren<PlayerCombat>();
@@ -70,9 +74,20 @@ public class Player : Character
         defense.Tick(this, Time.deltaTime);
         hitReceiver.Tick(Time.deltaTime);
         skillCaster.Tick(this, resources, Time.unscaledDeltaTime);
+        SyncJumpHeldFromInputAction();
 
         if (conditionState == ConditionState.Dead)
             return;
+
+        if (!inputReader.JumpHeld)
+            motor.CutJump();
+
+        if (IsActionBlockedByCondition())
+        {
+            inputReader.ClearTransientInputs();
+            UpdateMovementState();
+            return;
+        }
 
         if (inputLocked)
         {
@@ -101,6 +116,15 @@ public class Player : Character
         if (inputLocked)
         {
             motor.StopHorizontalMovement();
+            motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
+            return;
+        }
+
+        if (IsMovementBlockedByCondition())
+        {
+            if (conditionState == ConditionState.Root)
+                motor.StopHorizontalMovement();
+
             motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
             return;
         }
@@ -134,10 +158,10 @@ public class Player : Character
         if (inputReader.HasJumpPressed && TryJump())
             inputReader.ConsumeJumpPressed();
 
-        if (inputReader.HasAttackPressed && !skillCaster.IsCasting && combat.TryStartAttack(this))
+        if (conditionState != ConditionState.Disarm && inputReader.HasAttackPressed && !skillCaster.IsCasting && combat.TryStartAttack(this))
             inputReader.ConsumeAttackPressed();
 
-        if (inputReader.TryGetSkillPressed(out int skillIndex) && skillCaster.TryCast(this, resources, skillIndex))
+        if (conditionState != ConditionState.Disarm && inputReader.TryGetSkillPressed(out int skillIndex) && skillCaster.TryCast(this, resources, skillIndex))
             inputReader.ConsumeSkillPressed();
 
         if (inputReader.HasInteractPressed && interactor.TryInteract(this))
@@ -237,6 +261,27 @@ public class Player : Character
         return Mathf.Sign(inputX) == wallDirection;
     }
 
+    void SyncJumpHeldFromInputAction()
+    {
+        if (jumpAction == null)
+            return;
+
+        inputReader.SetJumpHeld(jumpAction.IsPressed());
+    }
+
+    bool IsActionBlockedByCondition()
+    {
+        return conditionState == ConditionState.Controlled
+            || conditionState == ConditionState.Stun
+            || conditionState == ConditionState.Fear;
+    }
+
+    bool IsMovementBlockedByCondition()
+    {
+        return IsActionBlockedByCondition()
+            || conditionState == ConditionState.Root;
+    }
+
     public void SetInputLocked(bool locked)
     {
         inputLocked = locked;
@@ -267,7 +312,7 @@ public class Player : Character
 
     public void OnJump(InputValue inputValue)
     {
-        bool pressed = inputValue.Get<float>() > 0.5f;
+        bool pressed = inputValue.isPressed;
         inputReader.SetJump(pressed);
 
         if (!pressed && motor != null)

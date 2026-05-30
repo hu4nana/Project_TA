@@ -50,7 +50,10 @@ public class PlayerMotor : MonoBehaviour
         if (!Mathf.Approximately(rigid.gravityScale, defaultGravityScale))
             rigid.gravityScale = defaultGravityScale;
 
-        ApplyBetterGravity(deltaTime);
+        if (!jumpHeld)
+            CutJump();
+
+        ApplyBetterGravity(deltaTime, jumpHeld);
     }
 
     public void Move(float inputX)
@@ -107,12 +110,17 @@ public class PlayerMotor : MonoBehaviour
         rigid.AddForce(force, ForceMode2D.Impulse);
     }
 
-    void ApplyBetterGravity(float deltaTime)
+    void ApplyBetterGravity(float deltaTime, bool jumpHeld)
     {
         if (character == null || character.IsGrounded)
             return;
 
-        float multiplier = rigid.linearVelocity.y < 0f ? fallGravityMultiplier : lowJumpGravityMultiplier;
+        float multiplier = 1f;
+        if (rigid.linearVelocity.y < 0f)
+            multiplier = fallGravityMultiplier;
+        else if (!jumpHeld)
+            multiplier = lowJumpGravityMultiplier;
+
         rigid.linearVelocity += Vector2.up * Physics2D.gravity.y * (multiplier - 1f) * deltaTime;
     }
 
