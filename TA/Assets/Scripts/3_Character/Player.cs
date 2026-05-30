@@ -24,16 +24,14 @@ public class Player : Character
     PlayerResourceController resources;
     PlayerHitReceiver hitReceiver;
     PlayerSkillCaster skillCaster;
+    PlayerGroundSensor groundSensor;
+    PlayerActionController actionController;
 
-    bool wasGrounded;
-    bool isTouchingWall;
-    int wallDirection;
-    float coyoteTimer;
-    float groundIgnoreTimer;
     bool inputLocked;
 
     public int MaxAirJumpCount => Mathf.Max(0, maxJumpChance - 1);
     public int AirJumpRemaining => jumpChance;
+    public bool IsInputLocked => inputLocked;
 
     private void Start()
     {
@@ -57,18 +55,19 @@ public class Player : Character
         GetRequiredInChildren<PlayerFeedbacks>();
         skillCaster = GetRequiredInChildren<PlayerSkillCaster>();
         jumpChance = MaxAirJumpCount;
+        groundSensor = new PlayerGroundSensor(this, coyoteTime, groundIgnoreAfterJump, wallCheckDistance, wallCheckSize);
 
         if (motor == null || hitReceiver == null || defense == null || resources == null)
             return;
 
         motor.Initialize(this);
         hitReceiver.Initialize(this, defense, resources, motor);
+        actionController = new PlayerActionController(new PlayerContext(this, inputReader, motor, combat, defense, interactor, resources, skillCaster));
     }
 
     void Update()
     {
         UpdateGroundState(Time.deltaTime);
-        UpdateWallState();
         resources.Tick(Time.deltaTime);
         combat.Tick(this, Time.deltaTime);
         defense.Tick(this, Time.deltaTime);
@@ -91,10 +90,11 @@ public class Player : Character
 
         if (inputLocked)
         {
-            if (inputReader.HasAttackPressed)
+            if (inputReader.HasAttackPressed || inputReader.HasInteractPressed)
             {
                 DialogueController.Instance?.Advance();
                 inputReader.ConsumeAttackPressed();
+                inputReader.ConsumeInteractPressed();
             }
 
             inputReader.TickBuffers();
@@ -103,7 +103,7 @@ public class Player : Character
             return;
         }
 
-        HandleActions();
+        actionController.TickActions();
         inputReader.TickBuffers();
         UpdateMovementState();
     }
@@ -113,59 +113,7 @@ public class Player : Character
         if (conditionState == ConditionState.Dead)
             return;
 
-        if (inputLocked)
-        {
-            motor.StopHorizontalMovement();
-            motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
-            return;
-        }
-
-        if (IsMovementBlockedByCondition())
-        {
-            if (conditionState == ConditionState.Root)
-                motor.StopHorizontalMovement();
-
-            motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
-            return;
-        }
-
-        float moveX = inputReader.Move.x;
-        bool pushingIntoWall = IsPushingIntoWall(moveX);
-
-        if (actionState != ActionState.Parry && !pushingIntoWall)
-        {
-            motor.Move(moveX);
-        }
-        else if (pushingIntoWall)
-        {
-            motor.StopHorizontalMovement();
-        }
-
-        motor.Tick(Time.fixedDeltaTime, inputReader.JumpHeld);
-    }
-
-    void HandleActions()
-    {
-        if (inputReader.HasParryPressed && defense.TryStartParry(this))
-            inputReader.ConsumeParryPressed();
-
-        if (inputReader.HasDashPressed && defense.TryStartDodge(this))
-        {
-            motor.StartDodge(defense.DodgeDashDuration);
-            inputReader.ConsumeDashPressed();
-        }
-
-        if (inputReader.HasJumpPressed && TryJump())
-            inputReader.ConsumeJumpPressed();
-
-        if (conditionState != ConditionState.Disarm && inputReader.HasAttackPressed && !skillCaster.IsCasting && combat.TryStartAttack(this))
-            inputReader.ConsumeAttackPressed();
-
-        if (conditionState != ConditionState.Disarm && inputReader.TryGetSkillPressed(out int skillIndex) && skillCaster.TryCast(this, resources, skillIndex))
-            inputReader.ConsumeSkillPressed();
-
-        if (inputReader.HasInteractPressed && interactor.TryInteract(this))
-            inputReader.ConsumeInteractPressed();
+        actionController.TickMovement(Time.fixedDeltaTime);
     }
 
     void UpdateMovementState()
@@ -184,35 +132,16 @@ public class Player : Character
 
     void UpdateGroundState(float deltaTime)
     {
-        bool rawGrounded = Grounded();
+        groundSensor.Tick(deltaTime);
+        isGrounded = groundSensor.IsGrounded;
 
-        if (groundIgnoreTimer > 0f)
-        {
-            groundIgnoreTimer -= deltaTime;
-            if (rigid.linearVelocity.y > 0.01f)
-                rawGrounded = false;
-        }
-
-        wasGrounded = isGrounded;
-        isGrounded = rawGrounded;
-
-        if (isGrounded)
-        {
-            coyoteTimer = coyoteTime;
-            if (!wasGrounded)
-                jumpChance = MaxAirJumpCount;
-        }
-        else
-        {
-            coyoteTimer -= deltaTime;
-        }
+        if (groundSensor.LandedThisFrame)
+            jumpChance = MaxAirJumpCount;
     }
 
-    bool TryJump()
+    public bool TryJump()
     {
-        bool canGroundJump = isGrounded || coyoteTimer > 0f;
-
-        if (canGroundJump)
+        if (groundSensor.CanGroundJump)
         {
             StartJump(true);
             return true;
@@ -233,32 +162,14 @@ public class Player : Character
         if (isGroundJump)
             jumpChance = MaxAirJumpCount;
 
-        coyoteTimer = 0f;
+        groundSensor.StartJump();
         isGrounded = false;
-        groundIgnoreTimer = groundIgnoreAfterJump;
         motor.Jump();
     }
 
-    void UpdateWallState()
+    public bool IsPushingIntoWall(float inputX)
     {
-        Vector2 origin = col.bounds.center;
-        Vector2 leftOrigin = origin + Vector2.left * (col.bounds.extents.x + wallCheckDistance * 0.5f);
-        Vector2 rightOrigin = origin + Vector2.right * (col.bounds.extents.x + wallCheckDistance * 0.5f);
-        int mask = GroundMask;
-
-        bool leftWall = Physics2D.OverlapBox(leftOrigin, wallCheckSize, 0f, mask) != null;
-        bool rightWall = Physics2D.OverlapBox(rightOrigin, wallCheckSize, 0f, mask) != null;
-
-        isTouchingWall = !isGrounded && (leftWall || rightWall);
-        wallDirection = leftWall ? -1 : rightWall ? 1 : 0;
-    }
-
-    bool IsPushingIntoWall(float inputX)
-    {
-        if (!isTouchingWall || isGrounded || wallDirection == 0 || Mathf.Abs(inputX) <= 0.01f)
-            return false;
-
-        return Mathf.Sign(inputX) == wallDirection;
+        return groundSensor.IsPushingIntoWall(inputX);
     }
 
     void SyncJumpHeldFromInputAction()
@@ -269,14 +180,14 @@ public class Player : Character
         inputReader.SetJumpHeld(jumpAction.IsPressed());
     }
 
-    bool IsActionBlockedByCondition()
+    public bool IsActionBlockedByCondition()
     {
         return conditionState == ConditionState.Controlled
             || conditionState == ConditionState.Stun
             || conditionState == ConditionState.Fear;
     }
 
-    bool IsMovementBlockedByCondition()
+    public bool IsMovementBlockedByCondition()
     {
         return IsActionBlockedByCondition()
             || conditionState == ConditionState.Root;

@@ -46,7 +46,7 @@ public class NpcDialogue : MonoBehaviour, IInteractable
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        PlayerInteractor interactor = other.GetComponentInParent<PlayerInteractor>();
+        PlayerInteractor interactor = FindPlayerInteractor(other);
         if (interactor == null)
             return;
 
@@ -57,13 +57,22 @@ public class NpcDialogue : MonoBehaviour, IInteractable
 
     void OnTriggerExit2D(Collider2D other)
     {
-        PlayerInteractor interactor = other.GetComponentInParent<PlayerInteractor>();
+        PlayerInteractor interactor = FindPlayerInteractor(other);
         if (interactor == null)
             return;
 
         playerInRange = false;
         interactor.Unregister(this);
         SetPrompt(false);
+    }
+
+    PlayerInteractor FindPlayerInteractor(Collider2D other)
+    {
+        Player player = other.GetComponentInParent<Player>();
+        if (player != null)
+            return player.GetComponentInChildren<PlayerInteractor>(true);
+
+        return other.GetComponentInParent<PlayerInteractor>();
     }
 
     void OnDialogueEnded()

@@ -20,6 +20,7 @@ public class Character : MonoBehaviour
     public int HP { get; private set; }
     public bool IsGrounded => isGrounded;
     public Rigidbody2D Rigidbody => rigid;
+    public BoxCollider2D Collider => col;
     public Vector2 GroundCheckCenter => groundCheckCenter;
     public Vector2 GroundCheckSize => groundCheckSize;
     public LayerMask GroundMask => groundMask;
